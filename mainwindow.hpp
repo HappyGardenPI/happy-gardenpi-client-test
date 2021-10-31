@@ -1,12 +1,10 @@
 #pragma once
 
-#include <hgardenpi-protocol/protocol.hpp>
-#include <hgardenpi-protocol/packages/synchro.hpp>
-using namespace hgardenpi::protocol;
-
-#include <mosquitto.h>
-
 #include <QMainWindow>
+#include <QSettings>
+
+#include "maincontroller.hpp"
+using hgarden::test::MainController;
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -14,18 +12,21 @@ QT_END_NAMESPACE
 
 class MainWindow : public QMainWindow
 {
-    Q_OBJECT
+  Q_OBJECT
+
+  QSettings settings;
+  MainController controller;
 
 public:
-    MainWindow(QWidget *parent = nullptr);
-    ~MainWindow();
+  MainWindow(QWidget *parent = nullptr);
+  ~MainWindow();
 
 private slots:
-    void on_mtbConnect_released();
+  void on_btnConnect_released();
 
-    void on_btnDisconnect_released();
+  void on_btnDisconnect_released();
 
-    void on_btnNext_released();
+  void on_btnNext_released();
 
 private:
     Ui::MainWindow *ui;

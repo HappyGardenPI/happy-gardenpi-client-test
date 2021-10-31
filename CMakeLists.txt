@@ -12,7 +12,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/3thparty/happy-gardenpi-protocol)
-find_package(Qt6 COMPONENTS Widgets REQUIRED)
+find_package(Qt6 COMPONENTS Widgets Core REQUIRED)
 
 include_directories(/usr/local/Cellar/mosquitto/2.0.10_1/include)
 link_directories(/usr/local/Cellar/mosquitto/2.0.10_1/lib)
@@ -38,6 +38,7 @@ set(PROJECT_SOURCES
 
 target_link_libraries(happy-gardenpi-client-test PRIVATE
     Qt6::Widgets
+    Qt6::Core
     hgardenpi_protocol
     mosquitto
     )
