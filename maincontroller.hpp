@@ -32,13 +32,14 @@ namespace hgarden::test
     static constexpr inline int PORT = 1883;
     static constexpr inline int KEEPALIVE = 60;
 
+    string topic;
+    uint8_t transactionId = 0;
     string serial;
 
-    mosquitto *tx = nullptr;
-    mosquitto *rx = nullptr;
 
-    friend void mosquittoRxCallback(mosquitto *, void *, const mosquitto_message *message);
-    friend void mosquittoTxCallback(mosquitto *, void *, const mosquitto_message *message);
+    mosquitto *mqttClient = nullptr;
+
+    friend void mqttClientCallback(mosquitto *, void *, const mosquitto_message *message);
 
     OnDataUpdate clientOnDataUpdate;
     OnDataUpdate serverOnDataUpdate;

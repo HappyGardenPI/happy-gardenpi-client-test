@@ -2,10 +2,13 @@
 #include "./ui_mainwindow.h"
 
 #include <QMessageBox>
+#include <QDebug>
 
 #include <memory>
-
+#include <string>
 using namespace std;
+
+
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -18,6 +21,16 @@ MainWindow::MainWindow(QWidget *parent)
     ui->edtUser->setText(std::move(settings.value("user").toString()));
     ui->edtPwd->setText(std::move(settings.value("pwd").toString()));
     ui->edtSerail->setText(std::move(settings.value("serial").toString()));
+
+    controller.setClientOnDataUpdate([&](const Head::Ptr &head)
+    {
+      showData(Reference::CLIENT, head);
+    });
+
+    controller.setServerOnDataUpdate([&](const Head::Ptr &head)
+    {
+      showData(Reference::SERVER, head);
+    });
 }
 
 MainWindow::~MainWindow()
@@ -87,6 +100,49 @@ void MainWindow::on_btnDisconnect_released()
 
 void MainWindow::on_btnNext_released()
 {
-  controller.next();
+  qDebug().nospace() << "click";
+  try
+  {
+      controller.next();
+  }
+  catch (const runtime_error &e)
+  {
+    QMessageBox msgBox;
+    msgBox.setText(e.what());
+    msgBox.setStandardButtons(QMessageBox::Cancel);
+    msgBox.setDefaultButton(QMessageBox::Cancel);
+    msgBox.exec();
+  }
+
+}
+
+void MainWindow::showData(Reference r, const Head::Ptr head)
+{
+  QCheckBox *ack;
+  QCheckBox *cnk;
+  QComboBox *package;
+  QTextEdit *txt;
+
+  switch (r)
+  {
+    case Reference::CLIENT:
+      ack = ui->ckbClientAck;
+      cnk = ui->ckbClientCnk;
+      package = ui->cmbClientPackage;
+      txt = ui->txtClient;
+      break;
+    case Reference::SERVER:
+      ack = ui->ckbServerAck;
+      cnk = ui->ckbServerCnk;
+      package = ui->cmbServerPackage;
+      txt = ui->txtServer;
+      break;
+  }
+
+  ack->setEnabled(head->flags | ACK);
+  cnk->setEnabled(head->flags | CKN);
+
+  txt->setText(head->getPayload().c_str());
+
 }
 

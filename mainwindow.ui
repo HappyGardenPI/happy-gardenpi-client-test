@@ -221,7 +221,7 @@
                </widget>
               </item>
               <item>
-               <widget class="QPlainTextEdit" name="txtClient">
+               <widget class="QTextEdit" name="txtClient">
                 <property name="enabled">
                  <bool>false</bool>
                 </property>
@@ -276,7 +276,7 @@
                </widget>
               </item>
               <item>
-               <widget class="QPlainTextEdit" name="txtServer">
+               <widget class="QTextEdit" name="txtServer">
                 <property name="enabled">
                  <bool>false</bool>
                 </property>

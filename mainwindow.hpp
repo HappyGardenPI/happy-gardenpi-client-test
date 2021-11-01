@@ -3,6 +3,9 @@
 #include <QMainWindow>
 #include <QSettings>
 
+#include <hgardenpi-protocol/head.hpp>
+using namespace hgardenpi::protocol;
+
 #include "maincontroller.hpp"
 using hgarden::test::MainController;
 
@@ -29,6 +32,14 @@ private slots:
   void on_btnNext_released();
 
 private:
+    enum class Reference
+    {
+      CLIENT,
+      SERVER
+    };
+
     Ui::MainWindow *ui;
+
+    void showData(Reference, const Head::Ptr head);
 };
 
