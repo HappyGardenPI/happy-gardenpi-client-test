@@ -218,6 +218,9 @@
                 <property name="enabled">
                  <bool>false</bool>
                 </property>
+                <property name="currentText">
+                 <string/>
+                </property>
                </widget>
               </item>
               <item>

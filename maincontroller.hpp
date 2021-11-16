@@ -7,6 +7,7 @@
 #include <mosquitto.h>
 
 #include <string>
+#include <map>
 #include <functional>
 
 //generic no copy no move constructor
@@ -27,6 +28,7 @@ namespace hgarden::test
   {
   public:
     using OnDataUpdate = function<void (const Head::Ptr &)>;
+    typedef map<Flags, string> MapFlags;
 
   private:
     static constexpr inline int PORT = 1883;
@@ -35,14 +37,13 @@ namespace hgarden::test
     string topic;
     uint8_t transactionId = 0;
     string serial;
-
+    MapFlags flags;
 
     mosquitto *mqttClient = nullptr;
 
-    friend void mqttClientCallback(mosquitto *, void *, const mosquitto_message *message);
-
     OnDataUpdate clientOnDataUpdate;
     OnDataUpdate serverOnDataUpdate;
+    friend void mqttClientCallback(struct mosquitto *, void *, int) noexcept;
   public:
 
 
@@ -64,6 +65,12 @@ namespace hgarden::test
     inline void setServerOnDataUpdate(const OnDataUpdate &newServerOnDataUpdate) noexcept
     {
       serverOnDataUpdate = newServerOnDataUpdate;
+    }
+
+
+    inline const MapFlags & getFlags() const noexcept
+    {
+      return flags;
     }
   };
 

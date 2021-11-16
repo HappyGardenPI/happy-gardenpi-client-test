@@ -4,20 +4,17 @@
 #include <iostream>
 #include <cstdlib>
 #include <hgardenpi-protocol/utilities/numberutils.hpp>
-
-namespace hgardenpi::protocol
-{
-  inline namespace v2 {
-    extern std::string generateRandomString(size_t length);
-  }
-}
+#include <hgardenpi-protocol/utilities/stringutils.hpp>
+#include <hgardenpi-protocol/protocol.hpp>
+#include <hgardenpi-protocol/packages/synchro.hpp>
 
 
 namespace hgarden::test
 {
 
-  void mqttClientCallback(mosquitto *, void *, const mosquitto_message *message);
+  static MainController *self;
 
+  void mqttClientCallback(struct mosquitto *, void *, int) noexcept;
 
   MainController::MainController()
       : transactionId(generateRandomIntegral<uint8_t>())
@@ -25,7 +22,15 @@ namespace hgarden::test
       , serverOnDataUpdate([](const Head::Ptr &){})
       , serial(move(generateRandomString(16)))
   {
+    self = this;
     mosquitto_lib_init();
+
+    flags[Flags::AGG] = "Aggregation";
+    flags[Flags::DAT] = "Data";
+    flags[Flags::ERR] = "Error";
+    flags[Flags::FIN] = "Finish";
+    flags[Flags::STA] = "Station";
+    flags[Flags::SYN] = "Synchro";
 
     bool cleanSession = true;
     mqttClient = mosquitto_new(nullptr, cleanSession, nullptr);
@@ -49,11 +54,7 @@ namespace hgarden::test
           cerr << err << endl;
       }
     });
-    mosquitto_message_callback_set(mqttClient, &mqttClientCallback);
-    mosquitto_publish_callback_set(mqttClient, [](struct mosquitto *, void *, int)
-    {
-        cout << "tx mosquitto_publish_callback_set" << endl;
-    });
+    mosquitto_publish_callback_set(mqttClient, mqttClientCallback);
 
 
   }
@@ -108,8 +109,9 @@ namespace hgarden::test
 
     auto dataSend = decodeFirst(encoded);
 
-    clientOnDataUpdate(dataSend);
+    cout << stringHexToString(encoded[0].first.get(), encoded[0].second) << endl;
 
+    clientOnDataUpdate(dataSend);
 
     if (int rc = mosquitto_publish(mqttClient, nullptr, topic.c_str(), encoded[0].second, reinterpret_cast<const void *>(encoded[0].first.get()), 0, 0) != MOSQ_ERR_SUCCESS)
     {
@@ -119,9 +121,34 @@ namespace hgarden::test
 
   }
 
-  void mqttClientCallback(mosquitto *, void *, const mosquitto_message *message)
+  void mqttClientCallback(struct mosquitto *, void *data, int length) noexcept try
   {
 
+    uint8_t *payload = new (nothrow) uint8_t[length];
+    if(!payload)
+    {
+      throw runtime_error("no memory for payload");
+    }
+
+    memset(payload, 0, length);
+
+
+
+    //decode message
+    auto head = decode(payload);
+
+    self->clientOnDataUpdate(head);
+
+    delete[] payload;
+
+  }
+  catch (const runtime_error &e)
+  {
+     cerr << e.what() << endl;
+  }
+  catch (...)
+  {
+     cerr << "generic exception" << endl;
   }
 
 }

@@ -22,6 +22,10 @@ MainWindow::MainWindow(QWidget *parent)
     ui->edtPwd->setText(std::move(settings.value("pwd").toString()));
     ui->edtSerail->setText(std::move(settings.value("serial").toString()));
 
+    auto head = make_shared<Head>();
+    showData(Reference::CLIENT, head);
+    showData(Reference::SERVER, head);
+
     controller.setClientOnDataUpdate([&](const Head::Ptr &head)
     {
       showData(Reference::CLIENT, head);
@@ -139,10 +143,14 @@ void MainWindow::showData(Reference r, const Head::Ptr head)
       break;
   }
 
-  ack->setEnabled(head->flags | ACK);
-  cnk->setEnabled(head->flags | CKN);
+  for (auto &&[k, v] : controller.getFlags()) {
+    package->addItem(v.c_str());
+  }
 
-  txt->setText(head->getPayload().c_str());
+  ack->setEnabled((head->flags & ACK) == ACK);
+  cnk->setEnabled((head->flags & CKN) == CKN);
+
+  txt->setText(head->getHexPayload().c_str());
 
 }
 
