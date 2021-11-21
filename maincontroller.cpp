@@ -14,13 +14,13 @@ namespace hgarden::test
 
   static MainController *self;
 
-  void mqttClientCallback(struct mosquitto *, void *, int) noexcept;
+  void mqttClientCallbackRX( mosquitto *, void *payload, int len) noexcept;
 
   MainController::MainController()
       : transactionId(generateRandomIntegral<uint8_t>())
       , clientOnDataUpdate([](const Head::Ptr &){})
       , serverOnDataUpdate([](const Head::Ptr &){})
-      , serial(move(generateRandomString(16)))
+      , clientSerial(move(generateRandomString(16)))
   {
     self = this;
     mosquitto_lib_init();
@@ -33,19 +33,35 @@ namespace hgarden::test
     flags[Flags::SYN] = "Synchro";
 
     bool cleanSession = true;
-    mqttClient = mosquitto_new(nullptr, cleanSession, nullptr);
-    if(!mqttClient){
+    mqttClinetRX = mosquitto_new("ClientRX", cleanSession, nullptr);
+    if(!mqttClinetRX){
+      throw runtime_error("out of memory for rx");
+    }
+
+    mqttClinetTX = mosquitto_new("ClientTX", cleanSession, nullptr);
+    if(!mqttClinetTX){
       throw runtime_error("out of memory for tx");
     }
 
-
-    //------tx-------
-    mosquitto_log_callback_set(mqttClient, [](struct mosquitto *, void *, int, const char *msg)
+    mosquitto_log_callback_set(mqttClinetRX, [](struct mosquitto *, void *, int, const char *msg)
+    {
+      cout << "rx mosquitto_log_callback_set" << msg << endl;
+    });
+    mosquitto_log_callback_set(mqttClinetTX, [](struct mosquitto *, void *, int, const char *msg)
     {
       cout << "tx mosquitto_log_callback_set" << msg << endl;
     });
 
-    mosquitto_connect_callback_set(mqttClient, [](struct mosquitto *, void *, int result)
+    mosquitto_connect_callback_set(mqttClinetRX, [](struct mosquitto *, void *, int result)
+    {
+      if (result != MOSQ_ERR_SUCCESS)
+      {
+          string err("rx mosquitto client connection error: ");
+          err.append(mosquitto_strerror(result));
+          cerr << err << endl;
+      }
+    });
+    mosquitto_connect_callback_set(mqttClinetTX, [](struct mosquitto *, void *, int result)
     {
       if (result != MOSQ_ERR_SUCCESS)
       {
@@ -54,35 +70,55 @@ namespace hgarden::test
           cerr << err << endl;
       }
     });
-    mosquitto_publish_callback_set(mqttClient, mqttClientCallback);
+//    mosquitto_publish_callback_set(mqttClinetRX, [](struct mosquitto *, void *payload, int len){
+//      cout << "A:" << stringHexToString((uint8_t *)payload, len) << endl;
+//    });
+    mosquitto_publish_callback_set(mqttClinetTX, &mqttClientCallbackRX);
+//    mosquitto_message_callback_set(mqttClinetRX, [](struct mosquitto *, void *, const struct mosquitto_message *message){
+//      cout << "C:" << stringHexToString((uint8_t *)message->payload, message->payloadlen) << endl;
+//    });
+//    mosquitto_message_callback_set(mqttClinetTX, [](struct mosquitto *, void *, const struct mosquitto_message *message){
+//      cout << "D:" << stringHexToString((uint8_t *)message->payload, message->payloadlen) << endl;
+//    });
 
 
   }
 
   MainController::~MainController() noexcept
   {
-    mosquitto_destroy(mqttClient);
+    mosquitto_destroy(mqttClinetRX);
+    mosquitto_destroy(mqttClinetTX);
     mosquitto_lib_cleanup();
   }
 
-  void MainController::connect(const string &url, const string &user, const string &pwd, const string &serail)
+  void MainController::connect(const string &url, const string &user, const string &pwd, const string &serial)
   {
+
+
+    this->topicTX = move(BASE_TOPIC + serial);
+    this->topicRX = move(BASE_TOPIC + this->clientSerial);
+
+    mosquitto_username_pw_set(mqttClinetRX, user.c_str(), pwd.c_str());
+    mosquitto_username_pw_set(mqttClinetTX, user.c_str(), pwd.c_str());
+
     int ver = MQTT_PROTOCOL_V311;
+    mosquitto_opts_set(mqttClinetRX, MOSQ_OPT_PROTOCOL_VERSION, &ver);
 
-    this->topic = move("/HappyGardenPI/" + serail);
+    if(auto rc = mosquitto_connect(mqttClinetRX, url.c_str(), PORT, KEEPALIVE))
+    {
+      string err("rx mosquitto_connect() error: ");
+      err.append(mosquitto_strerror(rc));
+      throw runtime_error(err);
+    }
 
-    mosquitto_username_pw_set(mqttClient, user.c_str(), pwd.c_str());
-
-    mosquitto_opts_set(mqttClient, MOSQ_OPT_PROTOCOL_VERSION, &ver);
-
-    if(auto rc = mosquitto_connect(mqttClient, url.c_str(), PORT, KEEPALIVE))
+    if(auto rc = mosquitto_connect(mqttClinetTX, url.c_str(), PORT, KEEPALIVE))
     {
       string err("tx mosquitto_connect() error: ");
       err.append(mosquitto_strerror(rc));
       throw runtime_error(err);
     }
 
-    if(auto rc = mosquitto_subscribe(mqttClient, nullptr, topic.c_str(), 0))
+    if(auto rc = mosquitto_subscribe(mqttClinetRX, nullptr, topicRX.c_str(), 0))
     {
       string err("rx mosquitto_subscribe() error: ");
       err.append(mosquitto_strerror(rc));
@@ -93,14 +129,15 @@ namespace hgarden::test
 
   void MainController::disconnect() noexcept
   {
-    mosquitto_disconnect(mqttClient);
+    mosquitto_disconnect(mqttClinetRX);
+    mosquitto_disconnect(mqttClinetTX);
   }
 
   void MainController::next() noexcept
   {
 
     auto synToServer = new Synchro;
-    synToServer->setSerial(serial);
+    synToServer->setSerial(clientSerial);
     auto encoded = encode(synToServer);
     delete synToServer;
 
@@ -113,7 +150,7 @@ namespace hgarden::test
 
     clientOnDataUpdate(dataSend);
 
-    if (int rc = mosquitto_publish(mqttClient, nullptr, topic.c_str(), encoded[0].second, reinterpret_cast<const void *>(encoded[0].first.get()), 0, 0) != MOSQ_ERR_SUCCESS)
+    if (int rc = mosquitto_publish(mqttClinetTX, nullptr, topicTX.c_str(), encoded[0].second, reinterpret_cast<const void *>(encoded[0].first.get()), 0, 0) != MOSQ_ERR_SUCCESS)
     {
         string err("mosquitto_publish() error: ");
         err.append(mosquitto_strerror(rc));
@@ -121,25 +158,25 @@ namespace hgarden::test
 
   }
 
-  void mqttClientCallback(struct mosquitto *, void *data, int length) noexcept try
+  void mqttClientCallbackRX(mosquitto *, void *payload, int len) noexcept try
   {
 
-    uint8_t *payload = new (nothrow) uint8_t[length];
-    if(!payload)
-    {
-      throw runtime_error("no memory for payload");
-    }
+//    uint8_t *payload = new (nothrow) uint8_t[message->payloadlen];
+//    if(!payload)
+//    {
+//      throw runtime_error("no memory for payload");
+//    }
 
-    memset(payload, 0, length);
+//    memset(payload, 0, message->payloadlen);
 
-
+    cout << "" << stringHexToString(reinterpret_cast<uint8_t *>(payload), len) << endl;
 
     //decode message
-    auto head = decode(payload);
+    auto head = decode((uint8_t *)payload);
 
     self->clientOnDataUpdate(head);
 
-    delete[] payload;
+    //delete[] payload;
 
   }
   catch (const runtime_error &e)

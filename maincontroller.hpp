@@ -33,17 +33,22 @@ namespace hgarden::test
   private:
     static constexpr inline int PORT = 1883;
     static constexpr inline int KEEPALIVE = 60;
+    static constexpr inline char* BASE_TOPIC = "/HappyGardenPI/";
 
-    string topic;
+
+    string topicRX;
+    string topicTX;
     uint8_t transactionId = 0;
-    string serial;
+    string clientSerial;
     MapFlags flags;
 
-    mosquitto *mqttClient = nullptr;
+    mosquitto *mqttClinetRX = nullptr;
+    mosquitto *mqttClinetTX = nullptr;
+
 
     OnDataUpdate clientOnDataUpdate;
     OnDataUpdate serverOnDataUpdate;
-    friend void mqttClientCallback(struct mosquitto *, void *, int) noexcept;
+    friend void mqttClientCallbackRX(mosquitto *, void *payload, int len) noexcept;
   public:
 
 
