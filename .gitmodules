@@ -1,3 +1,6 @@
 [submodule "3thparty/happy-gardenpi-protocol"]
 	path = 3thparty/happy-gardenpi-protocol
 	url = https://github.com/HappyGardenPI/happy-gardenpi-protocol
+[submodule "3thparty/libmosquitto"]
+	path = 3thparty/libmosquitto
+	url = https://github.com/HappyGardenPI/happy-gardenpi-libmosquitto.git
