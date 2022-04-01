@@ -5,21 +5,21 @@ using hgarden::test::Tui;
 #include "database.hpp"
 using hgarden::test::Database;
 
-static bool run = true;
+#include <iostream>
+using namespace std;
 
 int main() {
 
-    Tui tui;
     Database database;
 
-    while (tui.isRun()) {
-        tui.print();
-        tui.setOnMenuSelected([] (int menuNumber) {
+    Tui tui;
 
-        });
-        tui.clear();
-    }
+    tui.print([](uint8_t selected)
+    {
+        cout << to_string(selected) << endl;
+    });
 
-    return 0;
+    return EXIT_SUCCESS;
+
 
 }

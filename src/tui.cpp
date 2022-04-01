@@ -1,38 +1,108 @@
 //
-// Created by Antonio Salsi on 27/01/22.
+// Created by Antonio Salsi on 25/03/22.
 //
 
-#include "tui.hpp"
-
-#if defined _WIN32
-#include <conio.h>
-#endif
-
+#include <memory>
+#include <cstdio>
 #include <iostream>
 using namespace std;
 
-using namespace hgarden::test;
+#include <ftxui/dom/elements.hpp>
+#include "ftxui/component/screen_interactive.hpp"  // for ScreenInteractive
+#include <ftxui/component/component_base.hpp>      // for ComponentBase
+#include <ftxui/component/component_options.hpp>   // for MenuEntryOption
+#include <ftxui/dom/node.hpp>
+#include <ftxui/screen/color.hpp>
+using namespace ftxui;
 
-void Tui::print() const noexcept
+#include "tui.hpp"
+using hgarden::test::Tui;
+
+// Define a special style for some menu entry.
+static MenuEntryOption colored(Color c = Color::White)
 {
-    cout << "Select action" << endl;
-    cout << "1: Insert/Update server data" << endl;
+    return MenuEntryOption{
+        .animated_colors.foreground.enabled = true,
+        .animated_colors.background.enabled = true,
+        .animated_colors.background.active = c,
+        .animated_colors.background.inactive = Color::Black,
+        .animated_colors.foreground.active = Color::White,
+        .animated_colors.foreground.inactive = c
+    };
 }
-void Tui::clear() const noexcept
+
+void Tui::print(const OnSelect &&onSelected) const noexcept
 {
-#if defined _WIN32
-    system("cls");
-    //clrscr(); // including header file : conio.h
-#elif defined (__LINUX__) || defined(__gnu_linux__) || defined(__linux__)
-    system("clear");
-    //std::cout<< u8"\033[2J\033[1;1H"; //Using ANSI Escape Sequences
-#elif defined (__APPLE__)
-    system("/usr/bin/clear");
-#endif
+    using namespace ftxui;
+    auto screen = ScreenInteractive::TerminalOutput();
+
+    std::vector<std::string> left_menu_entries = {
+        "0%", "10%", "20%", "30%", "40%", "50%", "60%", "70%", "80%", "90%",
+    };
+    std::vector<std::string> right_menu_entries = {
+        "0%", "1%", "2%", "3%", "4%", "5%", "6%", "7%", "8%", "9%", "10%",
+    };
+
+    MenuOption menuOption =
+        {
+            .on_enter = screen.ExitLoopClosure()
+        };
+
+    int menuSelected = 0;
+    Component leftMenu = Menu(&left_menu_entries, &menuSelected, &menuOption);
+
+    Component&& container = Container::Horizontal({ leftMenu });
+
+    auto renderer = Renderer(container, [&]
+    {
+        return printContainer(
+            hbox({
+                     // -------- Left Menu --------------
+                     vbox({
+                              separator(),
+                              hcenter(bold(text("Percentage by 10%"))),
+                              separator(),
+                              leftMenu->Render(),
+                          }),
+
+                     separator(),
+                 })
+        );
+    });
+
+    screen.Loop(renderer);
+
+    if(oldMenuSelected != menuSelected)
+    {
+        onSelected(menuSelected);
+    }
+
 }
-void Tui::setOnMenuSelected(function<void(int)> onMenuSelected) const noexcept
+
+Element Tui::printContainer(const Element &&child) const noexcept
 {
-    char letter[2];
-    cin >> letter;
-    cout << letter << endl;
+    return vbox(
+        bgcolor(
+            Color::Blue,
+            vbox(
+                color(
+                    Color::White,
+                    vbox(
+                        vbox({
+                                 window(
+                                     text("Happy GardenPi communication test") | hcenter | bold,
+                                     // -------- Top panel --------------
+                                     vbox({
+                                            separator(),
+                                              center(child),
+                                              separator()
+                                          })
+                                 )
+                             })
+                    )
+                )
+            )
+        )
+    ) | border;
+
 }
