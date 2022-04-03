@@ -4,6 +4,9 @@
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/3thparty/happy-gardenpi-protocol" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/3thparty/libmosquitto" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/build/_deps/ftxui-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/build/_deps/sqlitecpp-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/build/_deps/sqlitecpp-src/googletest" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/cmake-build-debug/_deps/ftxui-src" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/cmake-build-debug/_deps/sqlitecpp-src" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/cmake-build-debug/_deps/sqlitecpp-src/googletest" vcs="Git" />

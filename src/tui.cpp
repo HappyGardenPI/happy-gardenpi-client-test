@@ -39,9 +39,6 @@ void Tui::print(const OnSelect &&onSelected) const noexcept
     std::vector<std::string> left_menu_entries = {
         "0%", "10%", "20%", "30%", "40%", "50%", "60%", "70%", "80%", "90%",
     };
-    std::vector<std::string> right_menu_entries = {
-        "0%", "1%", "2%", "3%", "4%", "5%", "6%", "7%", "8%", "9%", "10%",
-    };
 
     MenuOption menuOption =
         {
@@ -56,17 +53,16 @@ void Tui::print(const OnSelect &&onSelected) const noexcept
     auto renderer = Renderer(container, [&]
     {
         return printContainer(
-            hbox({
-                     // -------- Left Menu --------------
-                     vbox({
-                              separator(),
-                              hcenter(bold(text("Percentage by 10%"))),
-                              separator(),
-                              leftMenu->Render(),
-                          }),
+            hbox(filler(),
+                 vbox({
+                          filler(),
+                          center(text("Select option")),
+                          filler(),
+                          leftMenu->Render(),
 
-                     separator(),
-                 })
+                  }) | flex,
+                  filler()
+              )
         );
     });
 
@@ -93,9 +89,9 @@ Element Tui::printContainer(const Element &&child) const noexcept
                                      text("Happy GardenPi communication test") | hcenter | bold,
                                      // -------- Top panel --------------
                                      vbox({
-                                            separator(),
-                                              center(child),
-                                              separator()
+                                            filler(),
+                                            child | flex,
+                                            filler()
                                           })
                                  )
                              })
