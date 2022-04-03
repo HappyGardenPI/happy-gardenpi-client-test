@@ -5,6 +5,7 @@
 #pragma once
 
 #include "constants.hpp"
+#include "database.hpp"
 
 #include <ftxui/component/component.hpp>  // for MenuEntry, Renderer, Vertical
 using namespace ftxui;
@@ -16,21 +17,50 @@ using namespace std;
 namespace hgarden::test
 {
 
-//using namespace std;
+using Broker = Database::Broker;
 
+/**
+ * @brief Classt for TUI management
+ */
 class Tui
 {
-    uint8_t oldMenuSelected = 0;
 public:
 
-    using OnSelect = function<void(uint8_t)>;
+
+    enum class MenuSelect
+    {
+        DATA_BROKER,
+        DATA_EXIT
+    };
+
+    /**
+     * @brief On menu selection callback
+     */
+    using OnMenuSelect = function<void(MenuSelect)>;
+
+    /**
+     * @brief On menu selection callback
+    */
+    using OnDataBrokerSelect = function<void(Broker::Ptr)>;
 
     Tui() = default;
     HGARDENPI_NO_COPY_NO_MOVE(Tui)
 
-    void print(const OnSelect&& onSelected = [](uint8_t) {}) const noexcept;
+    /**
+     * @brief Print default menu
+     * @param brokerSet true when broker data connection are set
+     * @param onSelected pass menu selection callback
+     */
+    void print(bool brokerSet, const OnMenuSelect&& onSelected = [](MenuSelect) {}) const noexcept;
+
+    void printDataBroker(const OnDataBrokerSelect&& onSelected = [](Broker::Ptr) {}) const noexcept;
 
 private:
+    /**
+     * @brief Build and print default external container for TUI
+     * @param child Content to print
+     * @return Element to render
+     */
     [[nodiscard]] Element printContainer(const Element&& child) const noexcept;
 };
 

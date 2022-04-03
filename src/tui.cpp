@@ -3,8 +3,6 @@
 //
 
 #include <memory>
-#include <cstdio>
-#include <iostream>
 using namespace std;
 
 #include <ftxui/dom/elements.hpp>
@@ -31,14 +29,23 @@ static MenuEntryOption colored(Color c = Color::White)
     };
 }
 
-void Tui::print(const OnSelect &&onSelected) const noexcept
+void Tui::print(bool brokerSet, const OnMenuSelect &&onSelected) const noexcept
 {
     using namespace ftxui;
     auto screen = ScreenInteractive::TerminalOutput();
 
-    std::vector<std::string> left_menu_entries = {
-        "0%", "10%", "20%", "30%", "40%", "50%", "60%", "70%", "80%", "90%",
+    Strings menuEntries = {
+        "Update data broker",
+        "Exit"
     };
+
+    if (!brokerSet)
+    {
+        menuEntries = {
+            "Insert data broker",
+            "Exit"
+        };
+    }
 
     MenuOption menuOption =
         {
@@ -46,9 +53,9 @@ void Tui::print(const OnSelect &&onSelected) const noexcept
         };
 
     int menuSelected = 0;
-    Component leftMenu = Menu(&left_menu_entries, &menuSelected, &menuOption);
+    Component leftMenu = Menu(&menuEntries, &menuSelected, &menuOption);
 
-    Component&& container = Container::Horizontal({ leftMenu });
+    auto&& container = Container::Horizontal({ leftMenu });
 
     auto renderer = Renderer(container, [&]
     {
@@ -68,12 +75,58 @@ void Tui::print(const OnSelect &&onSelected) const noexcept
 
     screen.Loop(renderer);
 
-    if(oldMenuSelected != menuSelected)
-    {
-        onSelected(menuSelected);
-    }
+    onSelected(static_cast<MenuSelect>(menuSelected));
 
 }
+
+void Tui::printDataBroker(const OnDataBrokerSelect &&onSelected) const noexcept
+{
+    auto screen = ScreenInteractive::FitComponent();
+
+    Broker::Ptr broker = make_unique<Broker>();
+
+    string portData;
+
+    Component host = Input(&broker->host, "host");
+    Component port = Input(&portData, "port");
+    Component user = Input(&broker->user, "user");
+
+    InputOption passwordOption;
+    passwordOption.password = true;
+
+    Component passwd = Input(&broker->passwd, "passwd", passwordOption);
+
+    auto&& buttons = Container::Horizontal({
+                                             Button("Abort", screen.ExitLoopClosure()),
+                                             Button("Test", [&] {  }),
+                                             Button("Confirm", [&] {  }),
+                                         });
+
+    auto&& component = Container::Vertical({
+                                             host,
+                                             port,
+                                             user,
+                                             passwd,
+                                             buttons
+                                         });
+
+    auto renderer = Renderer(component, [&] {
+        return printContainer(
+            vbox({
+                        hbox(text(" Host     : "), host->Render()),
+                        hbox(text(" Port     : "), port->Render()),
+                        hbox(text(" User     : "), user->Render()),
+                        hbox(text(" Password : "), passwd->Render()),
+                        buttons->Render()
+                    }) | flex
+                    );
+    });
+
+
+    screen.Loop(renderer);
+}
+
+
 
 Element Tui::printContainer(const Element &&child) const noexcept
 {
@@ -99,6 +152,6 @@ Element Tui::printContainer(const Element &&child) const noexcept
                 )
             )
         )
-    ) | border;
+    ) ;
 
 }

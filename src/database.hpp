@@ -15,9 +15,16 @@ namespace hgarden::test
 namespace sql = SQLite;
 using std::unique_ptr;
 
+/**
+ * @brief Simple class for DAT connection to sqlite DB
+ */
 class Database
 {
 public:
+
+    /**
+     * @brief POD data structure
+     */
     struct Broker {
         typedef unique_ptr<Broker> Ptr;
         string host;
@@ -34,6 +41,10 @@ public:
     Database() noexcept;
     HGARDENPI_NO_COPY_NO_MOVE(Database)
 
+    /**
+     * @brief Get Broker config data
+     * @return
+     */
     [[nodiscard]] inline const Broker::Ptr &getBroker() const noexcept
     {
         return broker;

@@ -4,6 +4,7 @@
 
 #pragma once
 #include <string>
+#include <vector>
 #include <cstdint>
 //generic no copy no move constructor
 #define HGARDENPI_NO_COPY_NO_MOVE(clazz)      \
@@ -16,8 +17,16 @@ namespace hgarden::test
 {
 using namespace std;
 
+typedef vector<string> Strings;
+
+//dd file path
 inline constexpr char DB_PATH[] = "./hgarden_test.db";
 
+/**
+ * @brief Function to catch all exceptions
+ * @param exceptionPtr
+ * @return
+ */
 inline string what(const exception_ptr &exceptionPtr = current_exception())
 {
     if (!exceptionPtr) { throw bad_exception(); }
